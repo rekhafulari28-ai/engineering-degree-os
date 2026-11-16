@@ -15,20 +15,24 @@ data_dir = "data"
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
-# Helper function to load data safely
+# Helper function to load data safely, handling missing or empty CSV files
 @st.cache_data
 def load_data():
-    semesters = pd.read_csv(os.path.join(data_dir, "semesters.csv")) if os.path.exists(os.path.join(data_dir, "semesters.csv")) else pd.DataFrame(columns=["semester", "status", "total_credits", "completed_credits"])
-    courses = pd.read_csv(os.path.join(data_dir, "courses.csv")) if os.path.exists(os.path.join(data_dir, "courses.csv")) else pd.DataFrame(columns=["semester", "course_code", "course_name", "credits", "syllabus", "status"])
-    calendar = pd.read_csv(os.path.join(data_dir, "academic_calendar.csv")) if os.path.exists(os.path.join(data_dir, "academic_calendar.csv")) else pd.DataFrame(columns=["academic_year", "semester", "date", "event_type", "title"])
-    assessments = pd.read_csv(os.path.join(data_dir, "assessments.csv")) if os.path.exists(os.path.join(data_dir, "assessments.csv")) else pd.DataFrame(columns=["semester", "course_code", "assessment_type", "date", "max_marks", "status"])
-    scores = pd.read_csv(os.path.join(data_dir, "scores.csv")) if os.path.exists(os.path.join(data_dir, "scores.csv")) else pd.DataFrame(columns=["semester", "course_code", "assessment_type", "score", "max_marks", "grade"])
-    
-    checklist_path = os.path.join(data_dir, "plan_checklist.csv")
-    if os.path.exists(checklist_path):
-        checklist = pd.read_csv(checklist_path)
-    else:
-        checklist = pd.DataFrame(columns=["category", "item", "target_date", "status", "notes"])
+    def safe_read_csv(filename, default_columns):
+        filepath = os.path.join(data_dir, filename)
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            try:
+                return pd.read_csv(filepath)
+            except pd.errors.EmptyDataError:
+                return pd.DataFrame(columns=default_columns)
+        return pd.DataFrame(columns=default_columns)
+
+    semesters = safe_read_csv("semesters.csv", ["semester", "status", "total_credits", "completed_credits"])
+    courses = safe_read_csv("courses.csv", ["semester", "course_code", "course_name", "credits", "syllabus", "status"])
+    calendar = safe_read_csv("academic_calendar.csv", ["academic_year", "semester", "date", "event_type", "title"])
+    assessments = safe_read_csv("assessments.csv", ["semester", "course_code", "assessment_type", "date", "max_marks", "status"])
+    scores = safe_read_csv("scores.csv", ["semester", "course_code", "assessment_type", "score", "max_marks", "grade"])
+    checklist = safe_read_csv("plan_checklist.csv", ["category", "item", "target_date", "status", "notes"])
         
     return semesters, courses, calendar, assessments, scores, checklist
 
@@ -137,13 +141,10 @@ with tabs[7]:
 with tabs[8]:
     st.subheader("Degree Execution Plan & Checklist")
     st.write("Manage your tasks, milestones, and preparation status below:")
-    if not checklist.empty:
-        edited_checklist = st.data_editor(checklist, num_rows="dynamic", use_container_width=True)
-        if st.button("Save Checklist Changes"):
-            edited_checklist.to_csv(os.path.join(data_dir, "plan_checklist.csv"), index=False)
-            st.success("Checklist saved successfully!")
-    else:
-        st.info("No checklist items found.")
+    edited_checklist = st.data_editor(checklist, num_rows="dynamic", use_container_width=True)
+    if st.button("Save Checklist Changes"):
+        edited_checklist.to_csv(os.path.join(data_dir, "plan_checklist.csv"), index=False)
+        st.success("Checklist saved successfully!")
 
 # 10. Ask Degree AI
 with tabs[9]:
