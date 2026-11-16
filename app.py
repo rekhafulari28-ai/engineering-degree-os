@@ -32,13 +32,12 @@ def load_data():
     calendar = safe_read_csv("academic_calendar.csv", ["academic_year", "semester", "date", "event_type", "title"])
     assessments = safe_read_csv("assessments.csv", ["semester", "course_code", "assessment_type", "date", "max_marks", "status"])
     scores = safe_read_csv("scores.csv", ["semester", "course_code", "assessment_type", "score", "max_marks", "grade"])
-    checklist = safe_read_csv("plan_checklist.csv", ["category", "item", "target_date", "status", "notes"])
         
-    return semesters, courses, calendar, assessments, scores, checklist
+    return semesters, courses, calendar, assessments, scores
 
-semesters, courses, calendar, assessments, scores, checklist = load_data()
+semesters, courses, calendar, assessments, scores = load_data()
 
-# All 11 Required Navigation Tabs
+# Navigation Tabs matching your actual files
 tabs = st.tabs([
     "📊 Dashboard", 
     "🗂️ Semesters", 
@@ -48,7 +47,6 @@ tabs = st.tabs([
     "📝 Internal Assessments", 
     "📈 Status Tracker", 
     "🏆 Scorecard", 
-    "✅ Plan & Checklist", 
     "🤖 Ask Degree AI", 
     "⚙️ Data Admin"
 ])
@@ -137,17 +135,8 @@ with tabs[7]:
     else:
         st.info("No score records available.")
 
-# 9. Plan & Checklist
+# 9. Ask Degree AI
 with tabs[8]:
-    st.subheader("Degree Execution Plan & Checklist")
-    st.write("Manage your tasks, milestones, and preparation status below:")
-    edited_checklist = st.data_editor(checklist, num_rows="dynamic", use_container_width=True)
-    if st.button("Save Checklist Changes"):
-        edited_checklist.to_csv(os.path.join(data_dir, "plan_checklist.csv"), index=False)
-        st.success("Checklist saved successfully!")
-
-# 10. Ask Degree AI
-with tabs[9]:
     st.subheader("Ask Degree AI Chatbot")
     user_query = st.text_input("Ask a question about your degree data:")
     if user_query:
@@ -165,15 +154,14 @@ with tabs[9]:
         else:
             st.write("I cannot verify that from the current Degree OS data.")
 
-# 11. Data Admin
-with tabs[10]:
+# 10. Data Admin
+with tabs[9]:
     st.subheader("Data Administration & CSV Editor")
-    table_choice = st.selectbox("Select CSV to Edit:", ["semesters", "courses", "academic_calendar", "assessments", "scores", "plan_checklist"])
+    table_choice = st.selectbox("Select CSV to Edit:", ["semesters", "courses", "academic_calendar", "assessments", "scores"])
     
-    target_df = {"semesters": semesters, "courses": courses, "academic_calendar": calendar, "assessments": assessments, "scores": scores, "plan_checklist": checklist}[table_choice]
+    target_df = {"semesters": semesters, "courses": courses, "academic_calendar": calendar, "assessments": assessments, "scores": scores}[table_choice]
     
     edited_df = st.data_editor(target_df, num_rows="dynamic", use_container_width=True)
     if st.button(f"Save Changes to {table_choice}.csv"):
         edited_df.to_csv(os.path.join(data_dir, f"{table_choice}.csv"), index=False)
         st.success(f"{table_choice}.csv updated successfully!")
-        
